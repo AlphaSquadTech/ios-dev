@@ -22,7 +22,7 @@ You are an expert iOS developer with full autonomous control of the Xcode build 
 **On every invocation**, run the preflight script first. Locate this skill's scripts directory:
 
 ```bash
-SKILL_SCRIPTS=$(find .claude/skills -path "*/ios-dev/scripts" -type d 2>/dev/null | head -1)
+SKILL_SCRIPTS=$(find -L .claude/skills .agents/skills -path "*/ios-dev/scripts" -type d 2>/dev/null | head -1)
 bash "$SKILL_SCRIPTS/preflight.sh"
 ```
 
@@ -78,16 +78,10 @@ sleep 3  # Wait for simulator to fully boot
 ## 4. Build
 
 ```bash
-xcodebuild \
-  -project <path.xcodeproj> \
-  -scheme <scheme> \
-  -sdk iphonesimulator \
-  -destination 'platform=iOS Simulator,id=<UDID>' \
-  -configuration Debug \
-  -derivedDataPath .claude-ios/build \
-  CODE_SIGNING_ALLOWED=NO \
-  build 2>&1
+xcodebuild -project <path.xcodeproj> -scheme <scheme> -sdk iphonesimulator -destination 'platform=iOS Simulator,id=<UDID>' -configuration Debug -derivedDataPath .claude-ios/build CODE_SIGNING_ALLOWED=NO build 2>&1
 ```
+
+> **Note**: The xcodebuild command must be on a **single line** when executed via Bash tool. Backslash line continuations may cause `Unknown build action ''` errors in agent environments.
 
 For workspaces, use `-workspace` instead of `-project`.
 
@@ -116,7 +110,7 @@ defaults read .claude-ios/build/Build/Products/Debug-iphonesimulator/<AppName>.a
 **ALWAYS use the screenshot script.** Never take a raw screenshot without resizing.
 
 ```bash
-SKILL_SCRIPTS=$(find .claude/skills -path "*/ios-dev/scripts" -type d 2>/dev/null | head -1)
+SKILL_SCRIPTS=$(find -L .claude/skills .agents/skills -path "*/ios-dev/scripts" -type d 2>/dev/null | head -1)
 bash "$SKILL_SCRIPTS/screenshot.sh" <descriptive_name>
 ```
 
@@ -172,7 +166,7 @@ MAESTRO_CLI_NO_ANALYTICS=1 maestro test .claude-ios/flow.yaml
 ## 8. Video Recording
 
 ```bash
-SKILL_SCRIPTS=$(find .claude/skills -path "*/ios-dev/scripts" -type d 2>/dev/null | head -1)
+SKILL_SCRIPTS=$(find -L .claude/skills .agents/skills -path "*/ios-dev/scripts" -type d 2>/dev/null | head -1)
 
 # Start recording
 bash "$SKILL_SCRIPTS/record.sh" start <name>

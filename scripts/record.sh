@@ -8,13 +8,17 @@
 
 set -euo pipefail
 
-# Resolve project root by finding the parent that contains .claude/
+# Resolve project root by finding the parent that contains .claude/ or .agents/
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(pwd)"
 DIR="$SCRIPT_DIR"
 while [ "$DIR" != "/" ]; do
     PARENT="$(dirname "$DIR")"
     if [ -d "$PARENT/.claude" ] && [[ "$SCRIPT_DIR" == "$PARENT/.claude"* ]]; then
+        PROJECT_ROOT="$PARENT"
+        break
+    fi
+    if [ -d "$PARENT/.agents" ] && [[ "$SCRIPT_DIR" == "$PARENT/.agents"* ]]; then
         PROJECT_ROOT="$PARENT"
         break
     fi

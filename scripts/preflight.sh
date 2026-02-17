@@ -7,19 +7,23 @@
 ERRORS=0
 WARNINGS=0
 
-# Resolve project root: walk up from script location until we find .claude/ at the expected level
+# Resolve project root: walk up from script location to find the project directory.
+# The skill can be installed at .claude/skills/ or .agents/skills/ (via npx skills).
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# scripts/ is inside the skill folder, which is inside skills/, which is inside .claude/
-# So project root is 4 directories up from scripts/
 PROJECT_ROOT="$SCRIPT_DIR"
 while [ "$PROJECT_ROOT" != "/" ]; do
-    if [ -d "$PROJECT_ROOT/.claude" ] && [ "$PROJECT_ROOT/.claude" != "$SCRIPT_DIR" ] && [[ ! "$SCRIPT_DIR" == "$PROJECT_ROOT/.claude"* ]] ; then
-        break
-    fi
-    # Check if parent has .claude that is an ancestor of our script
     PARENT="$(dirname "$PROJECT_ROOT")"
+    # Check if parent contains .claude/ or .agents/ that is an ancestor of our script
     if [ -d "$PARENT/.claude" ] && [[ "$SCRIPT_DIR" == "$PARENT/.claude"* ]]; then
         PROJECT_ROOT="$PARENT"
+        break
+    fi
+    if [ -d "$PARENT/.agents" ] && [[ "$SCRIPT_DIR" == "$PARENT/.agents"* ]]; then
+        PROJECT_ROOT="$PARENT"
+        break
+    fi
+    # Also check current level (script might be invoked from project root)
+    if [ -d "$PROJECT_ROOT/.claude" ] && [[ ! "$SCRIPT_DIR" == "$PROJECT_ROOT/.claude"* ]] && [[ ! "$SCRIPT_DIR" == "$PROJECT_ROOT/.agents"* ]]; then
         break
     fi
     PROJECT_ROOT="$PARENT"
@@ -74,13 +78,19 @@ AVAILABLE=$(xcrun simctl list devices available 2>/dev/null | grep -c "iPhone" |
 echo "OK: $AVAILABLE iPhone simulators available, $BOOTED currently booted"
 
 # 6. Java (required for Maestro)
-if ! command -v java &>/dev/null; then
+JAVA_OK=false
+if command -v java &>/dev/null; then
+    JAVA_VERSION=$(java -version 2>&1 | head -1)
+    # macOS may have a java stub that prints "Unable to locate a Java Runtime"
+    if [ $? -eq 0 ] && ! echo "$JAVA_VERSION" | grep -qi "unable to locate"; then
+        echo "OK: Java $JAVA_VERSION"
+        JAVA_OK=true
+    fi
+fi
+if [ "$JAVA_OK" = false ]; then
     echo "WARN: Java not found. Required for Maestro."
     echo "  Fix: brew install openjdk@17"
     WARNINGS=$((WARNINGS + 1))
-else
-    JAVA_VERSION=$(java -version 2>&1 | head -1)
-    echo "OK: Java $JAVA_VERSION"
 fi
 
 # 7. Maestro (auto-install if missing)
